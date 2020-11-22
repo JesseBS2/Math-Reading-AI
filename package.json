@@ -1,0 +1,20 @@
+{
+  "name": "Math Reading AI",
+  "version": "1.0.0",
+  "description": "an AI that can read English text input and convert it to a math equation(and solve it!)",
+  "main": "index.js",
+  "dependencies": {
+    "algebra.js": "^0.2.6",
+    "index.js": "^0.0.3"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "ai",
+    "math"
+  ],
+  "author": "JesseBS2",
+  "license": "ISC"
+}
