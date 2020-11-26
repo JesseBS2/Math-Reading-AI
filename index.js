@@ -1,11 +1,17 @@
 const Algebra = require("algebra.js");
 
 /** TODO:
-  * Two-step problems, "If x - 7 = 5, what is the value of x + 4?"
+  * Two-step problems; "If x - 7 = 5, what is the value of x + 4?"
   ** This would be done simply by solving for x in the first equation, then evaluating the second one
 
   * fix Equations that include "and the difference is" or "and the quotient is" in situations such as "when 5 is decresed by 2 and the difference is doubled, what is the result?"
+
+  * Average/mean; "find the average of 100, 34 and 73"
+  ** the equation is just: (100+34+73)/3
+  ** most likely, if the input starts with "average of" or the like, it'll search for "and"(to end a list) then split by the commas
 **/
+
+
 
 /* functions */
 function Solve(input){
@@ -20,6 +26,24 @@ function Solve(input){
   var solveBy;
   var variable;
   var splitter; // only used in ratio problems
+
+
+  /* Square roots like √(25) */
+  for(var e = 0; e < output.length; e++){
+    if(output[e] == "√" && output[e+1] == "("){
+      e++;
+      for(var j = e; j < output.length; j++){
+        if(output[j] == ")"){
+
+          let squarerooted = Algebra.parse(output.substr(e+1,j-1-e));
+          output = output.substr(0, e-1) + Math.sqrt(squarerooted.constants[0].numer/squarerooted.constants[0].denom) + output.substr(j+1);
+          
+          break;
+        }
+      }
+      break;
+    }
+  }
 
   /* Detect if the answer is a variable */
   // had to move this higher up in the function, messed things up when it had a lower priority
@@ -92,12 +116,6 @@ function Solve(input){
     output = output.substr(14)
   }
 
-  /* Converts words to operations and numbers */
-  // why are these higher priority AND seperated by another section from the other ones? idk, but any other combination i try just glitches
-  output = change(output, ["greater than","increased by"],"+");
-  output = change(output, ["to the power of","**"], "^")
-  output = change(output, "twice","2 * ");
-  output = change(output, ["is doubled","doubled"],"*2"); // different order
 
   /* Decides how the function will solve the equation at the end */
   for(var e = 0; e < output.split("a number").length; e++){
@@ -110,7 +128,7 @@ function Solve(input){
   }
 
   let of_and = output.split(" ").indexOf("the");
-  if(of_and > -1 && output.split(" ")[of_and+2] == "of"){
+  if(of_and > -1 && output.split(" ")[of_and+2] == "of" && ["sum","product","difference","quotient"].includes(output.split(" ")[of_and+1])){
     let operation;
     let synonyms = {
       "sum": "+",
@@ -118,14 +136,26 @@ function Solve(input){
       "product": "*",
       "quotient": "/"
     }
-    if(["sum","product","difference","quotient"].includes(output.split(" ")[of_and+1])) operation = synonyms[output.split(" ")[of_and+1]];
+    operation = synonyms[output.split(" ")[of_and+1]];
     let thisLongThing = output.split("the "+output.split(" ")[of_and+1]+" of")[1].split(" ");
     thisLongThing[thisLongThing.indexOf("and")+1] += ")";
     thisLongThing[thisLongThing.indexOf("and")] = operation;
     output = output.split("the "+output.split(" ")[of_and+1]+" of")[0]+"("+change(thisLongThing.toString(),","," ");
   }
 
-  /* Yep */
+  let powered = output.split(" ").indexOf("to");
+  if(powered > -1 && output.split(" ")[powered+1] == "the" && output.split(" ")[powered+3] == "power"){
+    let operation;
+    
+    output = change(output.split("to the ")[0]+"^"+output.split("to the ")[1].split("power")[0],["st","nd","rd","th"],"");
+     
+  }
+
+  /* Converts words to operations and numbers */
+  output = change(output, ["greater than","increased by"],"+");
+  output = change(output, ["to the power of","**"],"^")
+  output = change(output, "twice","2 * ");
+  output = change(output, ["is doubled","doubled"],"*2"); // different order
   output = change(output, ["plus"],"+");
   output = change(output, ["minus","less than","is decreased by","is reduced by","the opposite of","the opposite"],"-");
   output = change(output, ["times","of","multiplied by"],"*");
@@ -135,7 +165,7 @@ function Solve(input){
 
   /* Handles situations like "is multiplied by 2" */
   for(var e = 0; e < output.length; e++){
-    if(output[e] == "="){ // searcj for an equals sign
+    if(output[e] == "="){ // searches for an equals sign
       if(output[e+1] == "*" || output[e+1] == "/" || output[e+1] == "+" || output[e+1] == "-"){ // this is a check so it only finds the words "is [operation]" instead of EVERY equals sign
         for(var j = e-1; j > -1; j-=1){ // go backwards until finding another equals sign(one half or side of the equation) or the beginning of the equation
           if(output[j] == "=" || j <= 0){
@@ -160,16 +190,16 @@ function Solve(input){
     }
   }
 
-  output = change(output,"--","+");
-  output = change(output,"+-","-");
-
   toReturnList.interpret = output; // this is the interpretation; right here is the final step before finding the answer, where the input is converted to an equation.
 
   /* Answers */
   
   if(solveBy === "variable"){
+
     toReturnList.answer = variable+" = "+Algebra.parse(output).solveFor(variable);
+
   }else if(solveBy === "eval"){
+
     var expression = Algebra.parse(output);
     for(var e = 0; e < variable.variables.length; e++){
       expression = Algebra.parse(expression.toString()).eval(variable.variables[e]);  
@@ -179,14 +209,17 @@ function Solve(input){
     if(expression.constants[0].denom == 1){
       toReturnList.answer = expression.constants[0].numer;
     }else{
-      toReturnList.answer = expression.constants[0].numer/expression.constants[0].denom;
+      toReturnList.answer = expression.constants[0].numer+"/"+expression.constants[0].denom;
     }
-  }else {
+
+  }else{
+
     if(Algebra.parse(output).constants[0].denom == 1){
       toReturnList.answer = Algebra.parse(output).constants[0].numer;
     }else{
-      toReturnList.answer = Algebra.parse(output).constants[0].numer/Algebra.parse(output).constants[0].denom;
+      toReturnList.answer = Algebra.parse(output).constants[0].numer+"/"+Algebra.parse(output).constants[0].denom;
     }
+
   }
 
   return toReturnList;
