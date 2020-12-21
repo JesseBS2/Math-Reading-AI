@@ -93,7 +93,7 @@ function Solve(input){
     output = change(output," ","");
 
     let temp,tempOutput;
-    if(output.split("evaluate")[1].split(temp = "if").includes("and") || output.split("evaluate")[1].split(temp = "when").includes("and")){
+    if(output.split("evaluate")[1].split(temp = "if")[1].includes("and") || output.split("evaluate")[1].split(temp = "when")[1].includes("and")){
       tempOutput = output.split("evaluate")[1].split(temp)[0]
       for(var e = 0; e < output.split("evaluate")[1].split(temp)[1].split("and").length; e++){
         variable.variables[e] = {};
@@ -106,9 +106,26 @@ function Solve(input){
     }
 
     output = tempOutput;
+  }else if(output.startsWith("if f(") || output.startsWith("f(")){
+    var variables = output.split("f(")[1].split(")")[0].replace(/ /g,"").split(",");
+    
+    output = change(output.split("=")[1].split(",")[0],variables,output.split("f(")[2].split(")")[0].replace(/ /g,"").split(","));
+    output = output.split(",")[0].split(";")[0].split("then")[0].split("when")[0].split("what is")[0]; // just covers all basis, if not "... x+2, ..." it'll get "... x+2; ..." then "... x+2 then what is ..." and finally "... x+2 what is ..."
+    output = change(output," ","");
+    toReturnList.interpret = output;
+
+    if(Algebra.parse(output).constants[0] == undefined){
+      toReturnList.answer = 0;
+    }else if(Algebra.parse(output).constants[0].denom == 1){
+      toReturnList.answer = Algebra.parse(output).constants[0].numer;
+    }else{
+      toReturnList.answer = Algebra.parse(output).constants[0].numer+"/"+Algebra.parse(output).constants[0].denom;
+    }
+    
+    return toReturnList;
   }
 
-  output = change(output,"percent","*0.01");
+  output = change(output,["percent","%"],"*0.01");
 
   if(output.startsWith("solve for")){
     solveBy = "variable";
@@ -206,7 +223,9 @@ function Solve(input){
     }
 
     // same as the thing below
-    if(expression.constants[0].denom == 1){
+    if(expression.constants[0] == undefined){
+      toReturnList.answer = 0;
+    }else if(expression.constants[0].denom == 1){
       toReturnList.answer = expression.constants[0].numer;
     }else{
       toReturnList.answer = expression.constants[0].numer+"/"+expression.constants[0].denom;
@@ -214,7 +233,9 @@ function Solve(input){
 
   }else{
 
-    if(Algebra.parse(output).constants[0].denom == 1){
+    if(Algebra.parse(output).constants[0] == undefined){
+      toReturnList.answer = 0;
+    }else if(Algebra.parse(output).constants[0].denom == 1){
       toReturnList.answer = Algebra.parse(output).constants[0].numer;
     }else{
       toReturnList.answer = Algebra.parse(output).constants[0].numer+"/"+Algebra.parse(output).constants[0].denom;
@@ -252,4 +273,6 @@ function change(input,find,changeto){
     }
   }
   return input;
+
+  
 }
